@@ -1526,10 +1526,33 @@ function wireTouch() {
       }
     };
 
+    button.addEventListener("touchstart", press, { passive: false });
+    button.addEventListener("touchend", release, { passive: false });
+    button.addEventListener("touchcancel", release, { passive: false });
     button.addEventListener("pointerdown", press);
     button.addEventListener("pointerup", release);
     button.addEventListener("pointercancel", release);
     button.addEventListener("pointerleave", release);
+  });
+}
+
+function wireInteractionGuards() {
+  const guardedElements = [
+    canvas,
+    touchControls,
+    hud,
+    messageOverlay,
+    toastMessage
+  ].filter(Boolean);
+
+  guardedElements.forEach((element) => {
+    element.addEventListener("contextmenu", (event) => {
+      event.preventDefault();
+    });
+
+    element.addEventListener("selectstart", (event) => {
+      event.preventDefault();
+    });
   });
 }
 
@@ -1598,6 +1621,7 @@ loadImages()
     renderLevelLists();
     wireKeyboard();
     wireTouch();
+    wireInteractionGuards();
     wireMenu();
     levelNameInput.value = state.editorLevel.name;
     updateBestTimeDisplay();
