@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Boomer Parkur</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="app">
+    <section class="phone-stage">
+      <canvas id="gameCanvas" width="420" height="840"></canvas>
+
+      <div id="hud" class="hud hidden">
+        <div class="hud-bar">
+          <button id="menuButton" class="hud-action">Menu</button>
+          <div class="hud-chip lives-chip">
+            <span class="hud-label">Can</span>
+            <div id="livesBar" class="lives-bar"></div>
+          </div>
+          <div class="hud-chip time-chip">
+            <span class="hud-label">Sure</span>
+            <strong id="timeText">0.00s</strong>
+          </div>
+        </div>
+      </div>
+
+      <section id="menuScreen" class="overlay-screen">
+        <div class="menu-shell">
+          <div class="menu-top">
+            <img class="menu-logo" src="source/assets/Ba%C5%9Fl%C4%B1ks%C4%B1z-1_0000_Katman-1.png" alt="Boomer Parkur">
+          </div>
+
+          <div class="menu-switch">
+            <button id="playTabBtn" class="tab-btn">Oyna</button>
+            <button id="editorTabBtn" class="tab-btn">Editor</button>
+          </div>
+
+          <div class="menu-stage">
+            <div id="playTab" class="tab-panel hidden">
+              <div class="section-head">
+                <span class="section-tag">Play</span>
+                <div>
+                  <h1>Haritalar</h1>
+                  <p>Mevcut haritalardan birini sec ve oyuna basla.</p>
+                </div>
+              </div>
+
+              <div id="levelList" class="level-list"></div>
+            </div>
+
+            <div id="editorTab" class="tab-panel hidden">
+              <div class="section-head">
+                <span class="section-tag">Editor</span>
+                <div>
+                  <h1>Harita editoru</h1>
+                  <p>Olustur, kaydet, yukle veya sil.</p>
+                </div>
+              </div>
+
+              <div class="editor-toolbar">
+                <input id="levelNameInput" class="level-name-input" type="text" maxlength="32" placeholder="Seviye adi">
+                <button id="newLevelBtn" class="mini-btn">Yeni</button>
+                <button id="saveLevelBtn" class="mini-btn accent">Kaydet</button>
+              </div>
+
+              <div id="palette" class="palette"></div>
+              <p id="selectedToolText" class="selected-tool">Secili arac: zemin</p>
+
+              <div class="editor-frame">
+                <canvas id="editorCanvas" width="280" height="1560"></canvas>
+              </div>
+
+              <div class="editor-actions">
+                <button id="fillGroundBtn" class="mini-btn">Taban Ekle</button>
+                <button id="clearEditorBtn" class="mini-btn">Temizle</button>
+              </div>
+
+              <div id="editorLevelList" class="saved-levels"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="messageOverlay" class="overlay-screen hidden compact">
+        <div class="message-card">
+          <img id="messageIcon" class="message-icon" src="" alt="">
+          <h2 id="messageTitle">Hazir misin?</h2>
+          <p id="messageBody">Parkura donuyorsun.</p>
+          <button id="overlayButton" class="cta-button small">Devam</button>
+        </div>
+      </section>
+
+      <div id="toastMessage" class="toast-message hidden">
+        <strong id="toastTitle">Canin Gitti</strong>
+        <span id="toastBody">Checkpointten devam.</span>
+      </div>
+
+      <div id="touchControls" class="touch-controls hidden">
+        <button class="control-btn icon-btn ghost" data-control="left" aria-label="Sol">
+          <span class="control-icon">&#9664;</span>
+        </button>
+        <button class="control-btn icon-btn ghost" data-control="right" aria-label="Sag">
+          <span class="control-icon">&#9654;</span>
+        </button>
+        <button class="control-btn jump icon-btn" data-control="jump" aria-label="Zipla">
+          <span class="control-icon">&#9650;</span>
+        </button>
+      </div>
+    </section>
+  </main>
+
+  <script src="game.js"></script>
+</body>
+</html>
