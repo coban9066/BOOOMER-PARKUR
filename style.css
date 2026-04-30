@@ -24,6 +24,16 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+button,
+.hud,
+.touch-controls,
+.message-card,
+.toast-message {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
 html,
 body {
   margin: 0;
@@ -480,6 +490,9 @@ canvas {
   background: rgba(19, 49, 79, 0.72);
   border: 1px solid rgba(255, 255, 255, 0.26);
   box-shadow: 0 6px 12px rgba(20, 43, 74, 0.1);
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: manipulation;
 }
 
 .lives-bar {
@@ -517,6 +530,9 @@ canvas {
 .cta-button {
   width: 100%;
   margin-top: 18px;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: manipulation;
 }
 
 .cta-button.small {
@@ -571,6 +587,10 @@ canvas {
   border: 1px solid rgba(255, 255, 255, 0.24);
   box-shadow: none;
   pointer-events: auto;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: none;
 }
 
 .control-btn.jump {
