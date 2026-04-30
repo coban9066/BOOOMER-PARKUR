@@ -106,11 +106,11 @@ const toolDefs = {
 const renderTweaks = {
   player: { x: -6, y: 10, width: 54, height: 64 },
   checkpoint: { x: -3, y: 2, width: 54, height: 86 },
-  spring: { x: 2, y: 22, width: 56, height: 56 },
+  spring: { x: 2, y: 24, width: 56, height: 56 },
   portal: { x: -6, y: 18, width: 72, height: 72 },
   fire: { x: 1, y: 22, width: 58, height: 58 },
-  spikes: { x: -2, y: 34, width: 64, height: 24 },
-  saw: { x: 2, y: 20, width: 56, height: 56 },
+  spikes: { x: -2, y: 42, width: 64, height: 20 },
+  saw: { x: 2, y: 24, width: 56, height: 56 },
   cannon: { x: -8, y: 22, width: 76, height: 52 },
   hangingSpike: { x: 6, y: -4, width: 46, height: 66 },
   grassA: { x: 0, y: 8, width: 60, height: 60 },
@@ -119,6 +119,14 @@ const renderTweaks = {
   stoneDark: { x: 0, y: 8, width: 60, height: 60 },
   ice: { x: 0, y: 8, width: 60, height: 60 },
   crate: { x: 0, y: 8, width: 60, height: 60 }
+};
+
+const SURFACE_ANCHORS = {
+  spring: { default: 0, grassA: 4, grassB: 0, ice: 4, crate: 2, stoneDark: 2, stoneCracked: 2 },
+  spikes: { default: 0, grassA: 4, grassB: 0, ice: 4, crate: 2, stoneDark: 2, stoneCracked: 2 },
+  saw: { default: 0, grassA: 4, grassB: 0, ice: 4, crate: 2, stoneDark: 2, stoneCracked: 2 },
+  cannon: { default: 2, grassA: 10, grassB: 6, ice: 10, crate: 8, stoneDark: 8, stoneCracked: 8 },
+  fire: { default: 0, grassA: 4, grassB: 0, ice: 4, crate: 2, stoneDark: 2, stoneCracked: 2 }
 };
 
 const state = {
@@ -419,6 +427,7 @@ function renderLevelLists() {
 }
 
 function createRuntimeLevel(levelData) {
+  const tileLookup = new Map(levelData.tiles.map((tile) => [`${tile.x}:${tile.y}`, tile.type]));
   const runtime = {
     solids: [],
     checkpoints: [],
@@ -438,17 +447,20 @@ function createRuntimeLevel(levelData) {
       runtime.checkpoints.push({ ...rect, label: `Bayrak ${runtime.checkpoints.length + 1}`, active: false, key: `${tile.x}:${tile.y}` });
     }
     if (["fire", "spikes", "saw", "cannonRight", "cannonLeft", "hangingSpike"].includes(tile.type)) {
-      runtime.hazards.push(createHazard(tile));
+      runtime.hazards.push(createHazard(tile, getSupportStyle(tileLookup, tile.x, tile.y)));
     }
     if (tile.type === "spring") {
+      const supportStyle = getSupportStyle(tileLookup, tile.x, tile.y);
+      const supportNudge = getSurfaceAnchorY("spring", supportStyle);
       runtime.springs.push({
         cellX: rect.x,
         cellY: rect.y,
+        supportStyle,
         ...rect,
         x: rect.x + 8,
-        y: rect.y + 26,
+        y: rect.y + 28 + supportNudge,
         width: TILE - 16,
-        height: TILE - 26
+        height: TILE - 28 - supportNudge
       });
     }
     if (tile.type === "portal") {
@@ -459,29 +471,49 @@ function createRuntimeLevel(levelData) {
   return runtime;
 }
 
-function hazardRect(type, x, y, dir = 1) {
+function getSupportStyle(tileLookup, x, y) {
+  const style = tileLookup.get(`${x}:${y + 1}`);
+  return ["grassA", "grassB", "stoneDark", "stoneCracked", "ice", "crate"].includes(style) ? style : null;
+}
+
+function getSurfaceAnchorY(type, style) {
+  const anchors = SURFACE_ANCHORS[type];
+  if (!anchors) {
+    return 0;
+  }
+  if (style && typeof anchors[style] === "number") {
+    return anchors[style];
+  }
+  return anchors.default || 0;
+}
+
+function hazardRect(type, x, y, dir = 1, supportStyle = null) {
   const base = gridRect(x, y);
+  const supportNudge = getSurfaceAnchorY(type, supportStyle);
   if (type === "spikes") {
-    return { x: base.x, y: base.y + TILE * 0.52, width: TILE, height: TILE * 0.32 };
+    return { x: base.x + 4, y: base.y + 42 + supportNudge, width: TILE - 8, height: 18 };
   }
   if (type === "cannon") {
-    return { x: base.x - 4, y: base.y + 6, width: TILE + 12, height: TILE * 0.7, dir };
+    return { x: base.x - 4, y: base.y + 8 + supportNudge, width: TILE + 12, height: TILE * 0.7, dir };
   }
   if (type === "hangingSpike") {
     return { x: base.x + TILE * 0.15, y: base.y - 6, width: TILE * 0.7, height: TILE * 0.9 };
   }
   if (type === "saw") {
-    return { x: base.x + 10, y: base.y + 22, width: TILE - 20, height: TILE - 22 };
+    return { x: base.x + 14, y: base.y + 30 + supportNudge, width: TILE - 28, height: TILE - 32 - supportNudge };
   }
-  return { x: base.x + 10, y: base.y + 8, width: TILE - 20, height: TILE - 16 };
+  return { x: base.x + 10, y: base.y + 12 + supportNudge, width: TILE - 20, height: TILE - 18 };
 }
 
-function createHazard(tile) {
+function createHazard(tile, supportStyle = null) {
   if (tile.type === "cannonRight" || tile.type === "cannonLeft") {
     const dir = tile.type === "cannonLeft" ? -1 : 1;
     return {
-      ...hazardRect("cannon", tile.x, tile.y, dir),
+      ...hazardRect("cannon", tile.x, tile.y, dir, supportStyle),
       type: "cannon",
+      gridX: tile.x,
+      gridY: tile.y,
+      supportStyle,
       dir,
       cooldown: 1.25
     };
@@ -500,7 +532,13 @@ function createHazard(tile) {
     };
   }
 
-  return { ...hazardRect(tile.type, tile.x, tile.y), type: tile.type };
+  return {
+    ...hazardRect(tile.type, tile.x, tile.y, 1, supportStyle),
+    type: tile.type,
+    gridX: tile.x,
+    gridY: tile.y,
+    supportStyle
+  };
 }
 
 function gridRect(x, y) {
@@ -785,7 +823,9 @@ function updateHazards(delta) {
   for (const hazard of state.runtimeLevel.hazards) {
     if (hazard.type === "saw" && overlap(state.player, hazard)) {
       const playerBottom = state.player.y + state.player.height;
-      if (state.player.vy >= 0 && playerBottom - hazard.y < 18) {
+      const playerCenterX = state.player.x + state.player.width / 2;
+      const horizontalSafe = playerCenterX > hazard.x + 4 && playerCenterX < hazard.x + hazard.width - 4;
+      if (state.player.vy >= 0 && horizontalSafe && playerBottom - hazard.y < 14) {
         bounceSaw();
         return;
       }
@@ -1218,8 +1258,11 @@ function drawGroundShadow(x, y, width, height, alpha = 0.16) {
 function drawHazard(hazard) {
   if (hazard.type === "cannon") {
     const tweak = renderTweaks.cannon;
-    drawGroundShadow(Math.floor(hazard.x / TILE) * TILE + 10, Math.floor(hazard.y / TILE) * TILE + TILE * 0.8, TILE * 0.72, 10, 0.18);
-    drawWorldSprite("cannon", hazard.x + tweak.x, hazard.y + tweak.y, tweak.width, tweak.height, hazard.dir < 0);
+    const baseX = hazard.gridX * TILE;
+    const baseY = hazard.gridY * TILE;
+    const anchorY = getSurfaceAnchorY("cannon", hazard.supportStyle);
+    drawGroundShadow(baseX + 10, baseY + TILE * 0.8 + anchorY, TILE * 0.72, 10, 0.18);
+    drawWorldSprite("cannon", baseX + tweak.x, baseY + tweak.y + anchorY, tweak.width, tweak.height, hazard.dir < 0);
     return;
   }
 
@@ -1237,10 +1280,13 @@ function drawHazard(hazard) {
 
   const tweak = renderTweaks[hazard.type];
   if (tweak) {
+    const baseX = hazard.gridX * TILE;
+    const baseY = hazard.gridY * TILE;
+    const anchorY = getSurfaceAnchorY(hazard.type, hazard.supportStyle);
     if (hazard.type === "saw" || hazard.type === "fire") {
-      drawGroundShadow(Math.floor(hazard.x / TILE) * TILE + TILE * 0.18, Math.floor(hazard.y / TILE) * TILE + TILE * 0.8, TILE * 0.64, 10, 0.18);
+      drawGroundShadow(baseX + TILE * 0.18, baseY + TILE * 0.8 + anchorY, TILE * 0.64, 10, 0.18);
     }
-    drawWorldImage(hazard.type, Math.floor(hazard.x / TILE) * TILE + tweak.x, Math.floor(hazard.y / TILE) * TILE + tweak.y, tweak.width, tweak.height);
+    drawWorldImage(hazard.type, baseX + tweak.x, baseY + tweak.y + anchorY, tweak.width, tweak.height);
     return;
   }
   drawWorldImage(hazard.type, hazard.x, hazard.y, hazard.width, hazard.height);
@@ -1249,6 +1295,7 @@ function drawHazard(hazard) {
 function drawEditor() {
   editorCtx.clearRect(0, 0, editorCanvas.width, editorCanvas.height);
   const cell = editorCanvas.width / COLS;
+  const tileLookup = new Map(state.editorLevel.tiles.map((tile) => [`${tile.x}:${tile.y}`, tile.type]));
 
   const gradient = editorCtx.createLinearGradient(0, 0, 0, editorCanvas.height);
   gradient.addColorStop(0, "#8fdcff");
@@ -1267,7 +1314,7 @@ function drawEditor() {
   state.editorLevel.tiles.forEach((tile) => {
     const px = tile.x * cell;
     const py = tile.y * cell;
-    drawEditorTile(tile, px, py, cell);
+    drawEditorTile(tile, px, py, cell, tileLookup);
   });
 
   const spawnX = state.editorLevel.spawn.x * cell;
@@ -1406,16 +1453,23 @@ function setEditorTile(x, y, type) {
   state.editorLevel.tiles.push({ x, y, type });
 }
 
-function drawEditorTile(tile, px, py, cell) {
+function drawEditorTile(tile, px, py, cell, tileLookup) {
   const sprite = toolDefs[tile.type]?.sprite || tile.type;
   const image = state.images[sprite];
   if (!image) {
     return;
   }
 
+  const supportStyle = getSupportStyle(tileLookup, tile.x, tile.y);
+  const supportOffset = getSurfaceAnchorY(
+    tile.type === "cannonLeft" || tile.type === "cannonRight" ? "cannon" : tile.type,
+    supportStyle
+  );
+  const supportScaleOffset = supportOffset * (cell / TILE);
+
   if (tile.type === "cannonLeft") {
     editorCtx.save();
-    editorCtx.translate(px + cell / 2, py + 6);
+    editorCtx.translate(px + cell / 2, py + 6 + supportScaleOffset);
     editorCtx.scale(-1, 1);
     editorCtx.drawImage(image, -(cell + 4) / 2, 0, cell + 4, cell - 10);
     editorCtx.restore();
@@ -1423,7 +1477,7 @@ function drawEditorTile(tile, px, py, cell) {
   }
 
   if (tile.type === "cannonRight") {
-    editorCtx.drawImage(image, px - 2, py + 6, cell + 4, cell - 10);
+    editorCtx.drawImage(image, px - 2, py + 6 + supportScaleOffset, cell + 4, cell - 10);
     return;
   }
 
@@ -1438,7 +1492,7 @@ function drawEditorTile(tile, px, py, cell) {
     editorCtx.drawImage(
       image,
       px + tweak.x * scale,
-      py + tweak.y * scale,
+      py + tweak.y * scale + supportScaleOffset,
       tweak.width * scale,
       tweak.height * scale
     );
